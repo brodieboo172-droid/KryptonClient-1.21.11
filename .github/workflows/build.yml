@@ -8,36 +8,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download project
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Java 21
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: Install Gradle
+      - name: Set up Gradle 9.2
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2'
 
-      - name: Extract project
+      - name: Extract Krypton project
+        shell: bash
         run: |
-          mkdir project
-          unzip -q "$(find . -maxdepth 1 -name '*.zip' | head -n 1)" -d project
+          mkdir extracted
+          unzip -q KryptonClient-1.21.11-port.zip -d extracted
+          echo "PROJECT=extracted/KryptonClient-1.21.11" >> "$GITHUB_ENV"
 
-      - name: Find project folder
+      - name: Build
+        shell: bash
         run: |
-          echo "PROJECT_DIR=$(find project -mindepth 1 -maxdepth 1 -type d | head -n 1)" >> "$GITHUB_ENV"
-
-      - name: Build mod
-        run: |
-          cd "$PROJECT_DIR"
-          gradle build --no-daemon
+          cd "$PROJECT"
+          gradle build --no-daemon --stacktrace
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: KryptonClient-1.21.11
-          path: ${{ env.PROJECT_DIR }}/build/libs/*.jar
+          path: extracted/KryptonClient-1.21.11/build/libs/*.jar
