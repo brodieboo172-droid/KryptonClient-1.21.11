@@ -12,31 +12,67 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Gradle 9.2
+      - name: Set up Gradle 9.2.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.1'
 
-      - name: Extract Krypton project
+      - name: Find and extract Krypton project
         shell: bash
         run: |
           mkdir extracted
-          unzip -q KryptonClient-1.21.11-port.zip -d extracted
-          echo "PROJECT=extracted/KryptonClient-1.21.11" >> "$GITHUB_ENV"
 
-      - name: Build
+          ZIP_FILE=$(find . -maxdepth 1 -type f -name '*.zip' | head -n 1)
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERROR: Could not find the Krypton ZIP file."
+            exit 1
+          fi
+
+          echo "Found ZIP: $ZIP_FILE"
+
+          unzip -q "$ZIP_FILE" -d extracted
+
+          PROJECT_DIR=$(find extracted -mindepth 1 -maxdepth 1 -type d | head -n 1)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: Could not find the extracted project folder."
+            exit 1
+          fi
+
+          echo "Project directory: $PROJECT_DIR"
+
+          echo "PROJECT=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Check project
+        shell: bash
+        run: |
+          echo "Using project:"
+          echo "$PROJECT"
+
+          echo "Project contents:"
+          ls -la "$PROJECT"
+
+      - name: Build Minecraft mod
         shell: bash
         run: |
           cd "$PROJECT"
           gradle build --no-daemon --stacktrace
 
+      - name: Show built files
+        shell: bash
+        run: |
+          echo "Built JAR files:"
+          find "$PROJECT/build/libs" -type f -name '*.jar' -print
+
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: KryptonClient-1.21.11
-          path: extracted/KryptonClient-1.21.11/build/libs/*.jar
+          path: ${{ env.PROJECT }}/build/libs/*.jar
+          if-no-files-found: error
