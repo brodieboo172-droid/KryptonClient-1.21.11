@@ -20,7 +20,7 @@ jobs:
       - name: Set up Gradle 9.2
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.2'
+          gradle-version: '9.2.1'
 
       - name: Extract Krypton project
         shell: bash
